@@ -5,7 +5,7 @@ from pathlib import Path
 from urllib import request,error,parse
 
 ROOT=Path(__file__).resolve().parents[1]
-CLIENT_VERSION='0.4.4'
+CLIENT_VERSION='0.4.5'
 def version_tuple(value):
     if not isinstance(value,str) or not re.fullmatch(r'\d+\.\d+\.\d+',value):return None
     return tuple(map(int,value.split('.')))
@@ -28,7 +28,8 @@ def http_failure(exc):
     if exc.code==426:
         return dict(status='update_required',update_required=True,update_entry='scripts/update_skill.py',
             message='当前版本需要更新才能继续此项操作。助手可帮你完成更新，无需重新注册或手工配置。')
-    if exc.code==429:return dict(status='query_limit_reached',message='查询频率或可查看档案额度已达上限。请稍后重试或联系小强哥，不通过换词、换账号或遍历编号绕过限制。')
+    if exc.code==422:return dict(status='matching_scope_required',message='这里支持按合作需求匹配人选，不提供整份通讯录。请说明想找的行业或资源。')
+    if exc.code==429:return dict(status='query_limit_reached',message='查询频率或可查看档案额度已达上限。请联系小强哥协助匹配，不通过换词、换账号或遍历编号绕过限制。')
     return dict(status='not_connected' if exc.code in (401,403) else 'service_unavailable',http_status=exc.code,message='查询未成功，请核实连接或权限。')
 
 def scrub(value):
@@ -143,7 +144,7 @@ def automatic_token(base_url):
         if not stat.S_ISREG(info.st_mode) or info.st_mode & 0o077:raise ValueError('unsafe session file')
         token=f.read(129).strip()
     if not re.fullmatch(r'[A-Za-z0-9_-]{43}',token):raise ValueError('invalid session file')
-    req=request.Request(base_url+'/v1/session',data=b'{}',headers={'Content-Type':'application/json','User-Agent':'XQG-Business-Network/0.4.4','Authorization':'Bearer '+token},method='POST')
+    req=request.Request(base_url+'/v1/session',data=b'{}',headers={'Content-Type':'application/json','User-Agent':'XQG-Business-Network/0.4.5','Authorization':'Bearer '+token},method='POST')
     with open_request(req, retry=True) as response:
         data=json.loads(response.read(4096))
     if data.get('session_ready') is not True:raise ValueError('session unavailable')
@@ -166,7 +167,7 @@ def remote(config,args):
     elif args.command=='register-profile':payload=dict(id=args.id,confirmed=args.confirmed,card=json.loads(Path(args.file).read_text()))
     elif args.command=='select-person':payload=dict(id=args.request_id,person_id=args.person_id,notice_shown=args.notice_shown)
     elif args.command=='delete-submission':payload=dict(id=args.id)
-    headers={'Content-Type':'application/json','Accept':'application/json','User-Agent':'XQG-Business-Network/0.4.4'}
+    headers={'Content-Type':'application/json','Accept':'application/json','User-Agent':'XQG-Business-Network/0.4.5'}
     token_var=config.get('token_env')
     token_path=config.get('token_file')
     automatic=config.get('automatic_session',False)
@@ -207,7 +208,7 @@ def remote(config,args):
     if args.command=='stop-recording':return dict(result,recording_stopped=data.get('recording_stopped') is True)
     if args.command=='delete-submission':return dict(result,deleted=data.get('deleted') is True)
     if args.command=='stats':return dict(result,public_profile_count=data.get('public_profile_count'),matched_profile_count=data.get('matched_profile_count'),query=data.get('query'),city=data.get('city'),kind=data.get('kind'),resource_count=data.get('resource_count'),need_count=data.get('need_count'))
-    return dict(result,matched_profile_count=data.get('matched_profile_count'),next_offset=data.get('next_offset'),results=[project_person(p) for p in data.get('results',[])[:args.limit]])
+    return dict(result,scope_limited=data.get('scope_limited') is True,matched_profile_count=data.get('matched_profile_count'),next_offset=data.get('next_offset'),results=[project_person(p) for p in data.get('results',[])[:args.limit]])
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
@@ -251,7 +252,8 @@ def main():
                     for person in page['results']:
                         if person['person_id'] not in seen:result['results'].append(person);seen.add(person['person_id'])
                     result['next_offset']=page.get('next_offset')
-                result['complete']=result.get('next_offset') is None and not result.get('partial',False)
+                    result['scope_limited']=bool(result.get('scope_limited') or page.get('scope_limited'))
+                result['complete']=result.get('next_offset') is None and not result.get('partial',False) and not result.get('scope_limited',False)
             return result
         return dict(status='configuration_error',message='未识别的连接方式。')
     except error.HTTPError as exc:
