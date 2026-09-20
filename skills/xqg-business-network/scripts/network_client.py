@@ -5,7 +5,7 @@ from pathlib import Path
 from urllib import request,error,parse
 
 ROOT=Path(__file__).resolve().parents[1]
-CLIENT_VERSION='0.4.3'
+CLIENT_VERSION='0.4.4'
 def version_tuple(value):
     if not isinstance(value,str) or not re.fullmatch(r'\d+\.\d+\.\d+',value):return None
     return tuple(map(int,value.split('.')))
@@ -45,10 +45,10 @@ def project_person(p):
         items=[dict(item_id=str(i.get('item_id','')),kind=str(i.get('kind','')),text=scrub(i.get('text')),
             status=scrub(i.get('status'))) for i in p.get('items',[]) if i.get('kind') in ('resource','need','request')],
         last_confirmed_at=p.get('last_confirmed_at'),confirmation_status=scrub(p.get('confirmation_status')),
-        identity_review_required=bool(p.get('identity_review_required')),match_basis=p.get('match_basis'),semantic_similarity=p.get('semantic_similarity'))
+        identity_review_required=bool(p.get('identity_review_required')),wechat_contact_verified=p.get('wechat_contact_verified') is True,business_confirmed_at=p.get('business_confirmed_at'),match_basis=p.get('match_basis'),semantic_similarity=p.get('semantic_similarity'))
 
 def local(config,args):
-    if args.command in ('submit','delete-submission','stop-recording','register-profile','my-profile'):return dict(status='not_connected',message='提交需要连接正式网络；本地查人模式不上传记录。')
+    if args.command in ('submit','delete-submission','stop-recording','register-profile','my-profile','select-person'):return dict(status='not_connected',message='提交需要连接正式网络；本地查人模式不上传记录。')
     if config.get('audience')!='operator':
         return dict(status='configuration_error',message='本地历史库仅限已配置的运营者环境，不能作为公开查询源。')
     path=Path(config['database_path']).expanduser().resolve()
@@ -143,7 +143,7 @@ def automatic_token(base_url):
         if not stat.S_ISREG(info.st_mode) or info.st_mode & 0o077:raise ValueError('unsafe session file')
         token=f.read(129).strip()
     if not re.fullmatch(r'[A-Za-z0-9_-]{43}',token):raise ValueError('invalid session file')
-    req=request.Request(base_url+'/v1/session',data=b'{}',headers={'Content-Type':'application/json','User-Agent':'XQG-Business-Network/0.4.3','Authorization':'Bearer '+token},method='POST')
+    req=request.Request(base_url+'/v1/session',data=b'{}',headers={'Content-Type':'application/json','User-Agent':'XQG-Business-Network/0.4.4','Authorization':'Bearer '+token},method='POST')
     with open_request(req, retry=True) as response:
         data=json.loads(response.read(4096))
     if data.get('session_ready') is not True:raise ValueError('session unavailable')
@@ -154,7 +154,7 @@ def remote(config,args):
     u=parse.urlsplit(base_url)
     if u.scheme!='https' or not u.hostname or u.username or u.password or u.query or u.fragment:
         return dict(status='configuration_error',message='共享连接需要运营者提供的 HTTPS 服务地址。')
-    endpoint={'status':'capabilities','stats':'stats','search':'search','person':'person','submit':'submissions','delete-submission':'submissions/delete','stop-recording':'recording/stop','register-profile':'registrations','my-profile':'registration'}[args.command]
+    endpoint={'status':'capabilities','stats':'stats','search':'search','person':'person','submit':'submissions','delete-submission':'submissions/delete','stop-recording':'recording/stop','register-profile':'registrations','my-profile':'registration','select-person':'referrals'}[args.command]
     payload={}
     if args.command=='search':
         payload=dict(query=args.query,city=args.city,kind=args.kind,limit=args.limit)
@@ -164,8 +164,9 @@ def remote(config,args):
     elif args.command=='submit':
         payload=dict(id=args.id,scope=args.scope,text=Path(args.file).read_text(),notice_shown=args.notice_shown,notice_version='2026-09-14-v3' if args.scope=='conversation_turn' else '2026-09-13-v2')
     elif args.command=='register-profile':payload=dict(id=args.id,confirmed=args.confirmed,card=json.loads(Path(args.file).read_text()))
+    elif args.command=='select-person':payload=dict(id=args.request_id,person_id=args.person_id,notice_shown=args.notice_shown)
     elif args.command=='delete-submission':payload=dict(id=args.id)
-    headers={'Content-Type':'application/json','Accept':'application/json','User-Agent':'XQG-Business-Network/0.4.3'}
+    headers={'Content-Type':'application/json','Accept':'application/json','User-Agent':'XQG-Business-Network/0.4.4'}
     token_var=config.get('token_env')
     token_path=config.get('token_file')
     automatic=config.get('automatic_session',False)
@@ -198,9 +199,10 @@ def remote(config,args):
     if args.command=='status':
         import importlib.util
         spec=importlib.util.spec_from_file_location('xqg_reception_config',Path(__file__).with_name('reception_config.py'));module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
-        return dict(result,**module.effective(data.get('reception_config')),mode='http',semantic_search_available=bool(data.get('semantic_search_available')),search_available=bool(data.get('search_available')),filtered_stats_available=bool(data.get('filtered_stats_available')),submission_available=bool(data.get('submission_available')),conversation_turn_available=bool(data.get('conversation_turn_available')),registration_available=bool(data.get('registration_available')),scheduler_available='由宿主另行核实')
+        return dict(result,**module.effective(data.get('reception_config')),mode='http',referral_available=bool(data.get('referral_available')),semantic_search_available=bool(data.get('semantic_search_available')),search_available=bool(data.get('search_available')),filtered_stats_available=bool(data.get('filtered_stats_available')),submission_available=bool(data.get('submission_available')),conversation_turn_available=bool(data.get('conversation_turn_available')),registration_available=bool(data.get('registration_available')),scheduler_available='由宿主另行核实')
     if args.command in ('register-profile','my-profile'):
         return dict(result,**{k:data[k] for k in ('saved','registered','person_id','revision','card','matching_open','registration_status','confirmed_at','replayed') if k in data})
+    if args.command=='select-person':return dict(result,**{k:data[k] for k in ('referral_id','stage','saved','replayed') if k in data})
     if args.command=='submit':return dict(result,submission_id=data.get('submission_id'),saved=data.get('saved') is True,registered=False,retention_days=data.get('retention_days'))
     if args.command=='stop-recording':return dict(result,recording_stopped=data.get('recording_stopped') is True)
     if args.command=='delete-submission':return dict(result,deleted=data.get('deleted') is True)
@@ -221,6 +223,7 @@ def main():
     sub.add_parser('my-profile')
     registration=sub.add_parser('register-profile');registration.add_argument('--file',required=True);registration.add_argument('--id',required=True);registration.add_argument('--confirmed',action='store_true',required=True)
     delete=sub.add_parser('delete-submission');delete.add_argument('--id',required=True)
+    selection=sub.add_parser('select-person');selection.add_argument('--person-id',required=True);selection.add_argument('--request-id',required=True);selection.add_argument('--notice-shown',action='store_true',required=True)
     args=parser.parse_args()
     if hasattr(args,'limit'):args.limit=max(1,min(100,args.limit))
     if args.command=='stats' and ((args.query is not None and not args.query.strip()) or (not args.query and (args.city or args.kind))):return dict(status='invalid_request',message='按条件统计需要提供查询关键词。')
