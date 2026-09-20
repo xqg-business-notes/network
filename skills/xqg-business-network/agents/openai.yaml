@@ -1,4 +1,4 @@
 interface:
   display_name: "小强哥 Business Network"
-  short_description: "通过自然聊天整理创业者需求与资源，生成档案卡并查询合作候选人"
-  default_prompt: "请用 $xqg-business-network 和我聊聊需求与资源，帮我整理创业者合作档案。"
+  short_description: "创业做生意，缺什么资源？说出你的需求，帮你找到能合作的人。"
+  default_prompt: "请用 $xqg-business-network 帮我匹配生意上需要的合作资源，我的需求是……"
