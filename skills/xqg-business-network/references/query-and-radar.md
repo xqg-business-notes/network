@@ -19,7 +19,7 @@ python3 scripts/network_client.py stats --query 跨境电商
 
 默认只读取发行包 service.json；显式 --config 仅用于已授权管理员查询或专用公开测试连接。不再自动读取本机 operator.local.json、环境变量或用户级连接配置，避免普通接待误用管理员权限。显式配置不存在时报告错误，不悄悄切换服务器。
 
-公开http连接使用automatic_session:true，脚本自动在用户目录保存独立访问标识，无须人工激活或先加微信。访问标识不输出到聊天，也不加入发行包。重新连接沿用已有标识，不通过删除文件或重装绕过额度。记录停止状态保存在后台，续期不重新开启。
+公开http连接使用automatic_session:true，脚本自动在用户目录保存独立访问标识，无须人工激活或先加微信。访问标识不输出到聊天，也不加入发行包。重新连接沿用已有标识，不通过删除文件或重装绕过额度。记录停止状态保存在后台，续期不重新开启。status返回recording_stopped=true时不提交接待记录或选人台账，查询和微信引荐继续；该状态不是连接故障。分页遇到限额或连接问题时保留已取得的结果并说明未取完，不能把部分结果报成完整名单。
 
 local与ssh_operator仅用于运营者授权环境。token_file/token_env为兼容已有运营者连接保留，与automatic_session不能同时使用。普通用户不需要手工配置这些字段。
 
@@ -27,7 +27,7 @@ local与ssh_operator仅用于运营者授权环境。token_file/token_env为兼�
 
 ## 检索方法
 
-按 [语义与完整名单规则](semantic-search.md) 理解意图。正式后台使用本地多语言向量语义召回与精确匹配结合，支持一句自然语言查询；AI保留用户限制、消解别称，读取候选证据并重排。找供应商用--kind resource，找客户用--kind need。完整候选用--all，不能读取管理员底库补齐。只有hybrid_semantic表示本次使用了语义模型，keyword_fallback须按实际降级结果呈现。
+按 [语义与完整名单规则](semantic-search.md) 理解意图。正式后台使用本地多语言向量语义召回与精确匹配结合，支持一句自然语言查询；AI保留用户限制、消解别称，读取候选证据并重排。找供应商用--kind resource，找客户用--kind need。完整候选用--all，不能读取管理员底库补齐。只有实际search或带查询条件的stats返回hybrid_semantic才表示本次使用了语义模型；keyword_fallback表示降级，分页混合结果mixed表示部分页降级，不能声称全程语义检索。status只是能力检查，不作检索结果依据。
 
 资源、需求、历史请求分开；`kind=need` 仅查对方明确填过的需求。求合作但还没预算是待确认，不等于不限预算。主营业务相符只说明相关，不证明当前愿意交付。
 

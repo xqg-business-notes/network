@@ -5,7 +5,7 @@ from pathlib import Path
 from urllib import request,error,parse
 
 ROOT=Path(__file__).resolve().parents[1]
-CLIENT_VERSION='0.4.5'
+CLIENT_VERSION='0.4.6'
 def version_tuple(value):
     if not isinstance(value,str) or not re.fullmatch(r'\d+\.\d+\.\d+',value):return None
     return tuple(map(int,value.split('.')))
@@ -25,6 +25,11 @@ def update_metadata(data,notify=False):
         update_entry='scripts/update_skill.py',existing_service_available=not required)
 
 def http_failure(exc):
+    try:body=json.loads(exc.read(4097))
+    except (OSError,ValueError,TypeError):body={}
+    finally:exc.close()
+    if exc.code==403 and isinstance(body,dict) and body.get('status')=='recording_stopped':
+        return dict(status='recording_stopped',recording_stopped=True,message='当前访问标识已停止接待记录，查询与微信引荐仍可继续；不要重试上传或重置标识。')
     if exc.code==426:
         return dict(status='update_required',update_required=True,update_entry='scripts/update_skill.py',
             message='当前版本需要更新才能继续此项操作。助手可帮你完成更新，无需重新注册或手工配置。')
@@ -144,7 +149,7 @@ def automatic_token(base_url):
         if not stat.S_ISREG(info.st_mode) or info.st_mode & 0o077:raise ValueError('unsafe session file')
         token=f.read(129).strip()
     if not re.fullmatch(r'[A-Za-z0-9_-]{43}',token):raise ValueError('invalid session file')
-    req=request.Request(base_url+'/v1/session',data=b'{}',headers={'Content-Type':'application/json','User-Agent':'XQG-Business-Network/0.4.5','Authorization':'Bearer '+token},method='POST')
+    req=request.Request(base_url+'/v1/session',data=b'{}',headers={'Content-Type':'application/json','User-Agent':'XQG-Business-Network/'+CLIENT_VERSION,'Authorization':'Bearer '+token},method='POST')
     with open_request(req, retry=True) as response:
         data=json.loads(response.read(4096))
     if data.get('session_ready') is not True:raise ValueError('session unavailable')
@@ -167,7 +172,7 @@ def remote(config,args):
     elif args.command=='register-profile':payload=dict(id=args.id,confirmed=args.confirmed,card=json.loads(Path(args.file).read_text()))
     elif args.command=='select-person':payload=dict(id=args.request_id,person_id=args.person_id,notice_shown=args.notice_shown)
     elif args.command=='delete-submission':payload=dict(id=args.id)
-    headers={'Content-Type':'application/json','Accept':'application/json','User-Agent':'XQG-Business-Network/0.4.5'}
+    headers={'Content-Type':'application/json','Accept':'application/json','User-Agent':'XQG-Business-Network/'+CLIENT_VERSION}
     token_var=config.get('token_env')
     token_path=config.get('token_file')
     automatic=config.get('automatic_session',False)
@@ -196,8 +201,11 @@ def remote(config,args):
         if len(body)>1024*1024:raise ValueError('response too large')
         data=json.loads(body)
     if data.get('status')!='ok':return dict(status='service_unavailable',message='共享查询暂不可用。')
-    result=dict(status='ok',audience='public',retrieval_mode=data.get('retrieval_mode'),as_of=data.get('as_of'),**update_metadata(data,notify=args.command=='status'))
+    result=dict(status='ok',audience='public',as_of=data.get('as_of'),**update_metadata(data,notify=args.command=='status'))
+    if args.command=='search' or (args.command=='stats' and getattr(args,'query',None)):
+        result['retrieval_mode']=data.get('retrieval_mode')
     if args.command=='status':
+        if type(data.get('recording_stopped')) is bool:result['recording_stopped']=data['recording_stopped']
         import importlib.util
         spec=importlib.util.spec_from_file_location('xqg_reception_config',Path(__file__).with_name('reception_config.py'));module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
         return dict(result,**module.effective(data.get('reception_config')),mode='http',referral_available=bool(data.get('referral_available')),semantic_search_available=bool(data.get('semantic_search_available')),search_available=bool(data.get('search_available')),filtered_stats_available=bool(data.get('filtered_stats_available')),submission_available=bool(data.get('submission_available')),conversation_turn_available=bool(data.get('conversation_turn_available')),registration_available=bool(data.get('registration_available')),scheduler_available='由宿主另行核实')
@@ -245,6 +253,8 @@ def main():
                     if offset is None:break
                     args.offset=offset
                     try:page=remote(config,args)
+                    except error.HTTPError as exc:
+                        result['partial']=True;result['continuation_status']=http_failure(exc)['status'];break
                     except (OSError,ValueError,error.URLError):
                         result['partial']=True;result['continuation_status']='service_unavailable';break
                     if page.get('status')!='ok':
@@ -253,6 +263,8 @@ def main():
                         if person['person_id'] not in seen:result['results'].append(person);seen.add(person['person_id'])
                     result['next_offset']=page.get('next_offset')
                     result['scope_limited']=bool(result.get('scope_limited') or page.get('scope_limited'))
+                    if page.get('retrieval_mode')!=result.get('retrieval_mode'):
+                        result['retrieval_mode']='mixed'
                 result['complete']=result.get('next_offset') is None and not result.get('partial',False) and not result.get('scope_limited',False)
             return result
         return dict(status='configuration_error',message='未识别的连接方式。')
