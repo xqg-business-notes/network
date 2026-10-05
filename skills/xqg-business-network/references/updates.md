@@ -32,13 +32,13 @@ status=updated后重新读取已安装的SKILL.md和相关参考，再运行netw
 
 这些已安装副本没有更新脚本，无法凭后台自动长出该能力。用户提出更新后，助手从官方仓库固定commit读取并检查scripts/update_skill.py，保存至临时文件，用--root指定现有安装目录先检查，再按授权执行--apply --approved --commit。脚本内置发行清单验证，支持已知0.3.4/0.3.5原版基线；本地改动仍须合并，不先删除旧版。不需要用户自己找文件或重新设置连接。
 
-固定仓库：https://github.com/xqg-business-notes/xqg-business-network
+固定仓库：https://github.com/xqg-business-notes/network
 安装子目录：skills/xqg-business-network
 
 一次迁移后，后续沿用内置更新入口。它是用户确认后由助手更新，不是后台静默修改用户电脑。未来需要改协议或采集范围时单独处理，不能承诺永不需要本地更新。
 
-## GitHub 账号改名后的旧版迁移
+## 仓库地址改变后的旧版迁移
 
-官方账号已改为 `xqg-business-notes`。旧版脚本内固定的旧地址会收到 GitHub 重定向，但脚本主动拒绝跳转，因此检查或更新可能失败；不能通过关闭安全检查、重新生成连接身份或删除原 Skill 解决。
+官方仓库现为 `xqg-business-notes/network`。旧版脚本内固定的旧账号或旧仓库地址会收到 GitHub 重定向，但脚本主动拒绝跳转，因此检查或更新可能失败；不能通过关闭安全检查、重新生成连接身份或删除原 Skill 解决。
 
 用户提出迁移或更新后，从上述新仓库取得主分支完整 commit SHA，读取同一提交的 `skills/xqg-business-network/release-manifest.json` 和 `scripts/update_skill.py`，校验脚本 SHA-256 与清单一致，并审阅固定仓库及下载路径。将核验后的脚本保存到临时文件，以 `--root` 指定原 Skill 目录并以 `--commit` 固定该提交，先检查；没有本地修改冲突时，再用相同参数加 `--apply --approved` 完成更新。沿用本节既有授权、备份与恢复规则，保留连接、会话及额外用户文件，不强制覆盖冲突。迁移一次后使用原 Skill 目录中的新版脚本。

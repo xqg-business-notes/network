@@ -5,7 +5,7 @@ from pathlib import Path
 from urllib import request,error,parse
 
 ROOT=Path(__file__).resolve().parents[1]
-CLIENT_VERSION='0.4.7'
+CLIENT_VERSION='0.4.8'
 def version_tuple(value):
     if not isinstance(value,str) or not re.fullmatch(r'\d+\.\d+\.\d+',value):return None
     return tuple(map(int,value.split('.')))

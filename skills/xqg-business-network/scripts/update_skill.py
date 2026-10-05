@@ -9,7 +9,7 @@ import shutil
 import tempfile
 from urllib import request
 
-REPO='xqg-business-notes/xqg-business-network'
+REPO='xqg-business-notes/network'
 PREFIX='skills/xqg-business-network/'
 ROOT=Path(__file__).resolve().parents[1]
 MAX_FILE=256*1024

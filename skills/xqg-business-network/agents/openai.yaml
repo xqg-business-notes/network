@@ -1,4 +1,4 @@
 interface:
-  display_name: "小强哥 Business Network｜商业人脉"
+  display_name: "小强哥商业人脉"
   short_description: "创业做生意，缺什么资源？说出你的需求，帮你找到能合作的人。"
   default_prompt: "请用 $xqg-business-network 帮我匹配生意上需要的合作资源，我的需求是……"
