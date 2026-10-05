@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "0.4.6",
-  "summary": "明确商业人脉与创业教练分工，保留停止记录选择，准确区分连接与检索状态。",
+  "version": "0.4.7",
+  "summary": "适配 GitHub 账号 xqg-business-notes，更新安装和升级地址，并说明旧版保留连接的迁移办法。",
   "files": {
     "scripts/public_identity.py": "bf7646722fbcfd314271b7528c541d8ffcf655991a3eee0b9b0b4520fbb47859",
     "scripts/preview_profile.py": "eef47a27300e7b737177572034e5c4c7168924174ceeb73bf73bf8956204745e",
@@ -11,17 +11,17 @@
     "scripts/reception_config.py": "2bd07dd91ccd6ef7fa144cc59b5ecb924b5010d08d4c8caff0b1078b5cc02786",
     "references/reception.md": "9cdf8e5b622fbfd669e1dc3f74c73b9b80e5e8157cc6a3ffecb910d1c49c5f51",
     "service.json": "8d9c98757e9adb388dd2f2c566ec75650ffff3df35f220bf119f1260012d1933",
-    "SKILL.md": "b083756c6d22d4a59af2ea20f086d93c5883f5eed70e15ef22f683613deb8166",
+    "SKILL.md": "96e2ddb926fddc2db4eaae27e0f73fcfdabcdb23670e0d35e796d97c1b667935",
     "agents/openai.yaml": "c08db0c68b31740fdcf3819e37b7438aea11ea950057cbca5c0d05b9b121f2b8",
     "references/profile-card.md": "ed1741a5150db178538b44b9de9be40b92e790a4979f843a27a396261cdec22f",
     "references/registration.md": "2e955f62d2d2eeefa286381466c3f48f8c2e7797d7843cc0b697542ad6ddd1ce",
     "references/query-and-radar.md": "2ad3e73382a0f6bc3c7c8a1f5dd4eda4dc838655368523c3909d0f471f439dee",
-    "references/platforms.md": "ffe2b2f4d44fb192f6a56488a484bddcad51f228247be642ea89ede2d4ac1779",
+    "references/platforms.md": "c9c50dd7374b8d8cc60e886d8d0f87d8b8cbac1b63a98f16680f87a8d9510b09",
     "references/interaction-records.md": "e014f5ea8b0f78665a91fe518a0f07e95ef2a7b697221f5cb68afd5f13f494c6",
-    "scripts/network_client.py": "199af92bfee9c2e0744fbf160eeebe2b6cba786eb2718c9af138991fd7058eae",
+    "scripts/network_client.py": "c6859abf623219e811ab4beb0c3957e9a5b937bf9f28cbe0e3e7eca668f043e1",
     "scripts/setup_connection.py": "140e7c26e168c7b7b86b7fbd3699d88ccecbb313a7135027c158375c131dd7a9",
-    "scripts/update_skill.py": "cabd70a5b82e87058268cf87d19bc74ab402cf8b76f6782ea22d3637ad6ae0c0",
-    "references/updates.md": "1257081111c4026b317364f59d0b1de4b07de32dbac17d282d6a28ece5d5a509",
+    "scripts/update_skill.py": "f8557138910486460a88589803b84b932f6bbaae1169ec25a77c9c346fe59288",
+    "references/updates.md": "ae985637dc5e76e21270589ecc1049f53f96f82be63f5806a948d3f285cfc368",
     "LICENSE": "e9bdafc87e889f75622aade8b0210f48e24fef9fcaeaf78c89f2128d24e6d8de"
   },
   "legacy_baselines": [

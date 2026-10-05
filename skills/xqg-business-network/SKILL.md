@@ -2,7 +2,7 @@
 name: xqg-business-network
 description: "按创业者的业务需求搜索真实合作人选、供应商、渠道及有明确需求的潜在客户，协助资源档案登记和微信引荐。适用于找人、找资源、发布供需或更新网络档案；仅讨论合作策略、招聘标准或经营决策时不触发人脉查询。"
 metadata:
-  version: "0.4.6"
+  version: "0.4.7"
 ---
 
 # 小强哥 Business Network｜商业人脉

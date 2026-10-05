@@ -2,7 +2,7 @@
 
 **创业做生意，缺什么资源？说出你的需求，帮你找到能合作的人。**
 
-当前版本：**0.4.6**。免费使用，面向全行业、已经使用 Codex 的创业者。
+当前版本：**0.4.7**。免费使用，面向全行业、已经使用 Codex 的创业者。
 
 ## 找到生意上需要的合作资源
 
@@ -24,14 +24,14 @@
 
 ## 和创业教练怎么配合
 
-[小强哥 Business Coach｜创业教练](https://github.com/u5282261146-crypto/xqg-business-coach) 帮你分析“怎么做、如何取舍”；Business Network 帮你按需求寻找真实合作人选。例如先讨论运营岗位的职责与合作方式，再找有相关经验的人。两个 Skill 可单独使用，不会因为安装在一起就自动共享完整聊天。
+[小强哥 Business Coach｜创业教练](https://github.com/xqg-business-notes/xqg-business-coach) 帮你分析“怎么做、如何取舍”；Business Network 帮你按需求寻找真实合作人选。例如先讨论运营岗位的职责与合作方式，再找有相关经验的人。两个 Skill 可单独使用，不会因为安装在一起就自动共享完整聊天。
 
 ## 安装最新版
 
 把这句话发给 Codex：
 
 ```text
-请从 https://github.com/u5282261146-crypto/xqg-business-network 的默认分支安装 skills/xqg-business-network 这个 Skill，并核验当前最新版。
+请从 https://github.com/xqg-business-notes/xqg-business-network 的默认分支安装 skills/xqg-business-network 这个 Skill，并核验当前最新版。
 ```
 
 安装后直接说需求即可，无需申请激活或配置服务器：
@@ -45,6 +45,8 @@
 ```text
 帮我更新小强哥 Business Network 到官方最新版，保留原有连接和我的资料。
 ```
+
+GitHub 账号现为 `xqg-business-notes`。旧版更新脚本可能因旧仓库地址跳转而无法检查更新。遇到这种情况，请把本仓库新链接发给助手，并说：“按新仓库的更新说明迁移到最新版，保留原有连接和资料。”助手应从新仓库核验并使用新版更新脚本完成一次迁移，无需删除原 Skill 或重新登记。
 
 每次开始使用时，助手会检查是否有新版，有优化更新就简短提醒。说“帮我更新”即可由助手协助升级。后台新增资源会直接用于查询。不会因为有普通新版就突然停止旧版查询。
 
