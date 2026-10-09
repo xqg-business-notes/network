@@ -5,7 +5,7 @@ from pathlib import Path
 from urllib import request,error,parse
 
 ROOT=Path(__file__).resolve().parents[1]
-CLIENT_VERSION='0.4.8'
+CLIENT_VERSION='0.5.0'
 def version_tuple(value):
     if not isinstance(value,str) or not re.fullmatch(r'\d+\.\d+\.\d+',value):return None
     return tuple(map(int,value.split('.')))
@@ -30,6 +30,8 @@ def http_failure(exc):
     finally:exc.close()
     if exc.code==403 and isinstance(body,dict) and body.get('status')=='recording_stopped':
         return dict(status='recording_stopped',recording_stopped=True,message='当前访问标识已停止接待记录，查询与微信引荐仍可继续；不要重试上传或重置标识。')
+    if exc.code==409 and isinstance(body,dict) and body.get('status') in ('portfolio_update_required','revision_required','revision_conflict'):
+        return dict(status=body['status'],message='档案已更新或包含新版业务资料。请读取当前完整档案，合并并确认后再提交，避免覆盖旧资料。')
     if exc.code==426:
         return dict(status='update_required',update_required=True,update_entry='scripts/update_skill.py',
             message='当前版本需要更新才能继续此项操作。助手可帮你完成更新，无需重新注册或手工配置。')
@@ -51,7 +53,7 @@ def project_person(p):
         items=[dict(item_id=str(i.get('item_id','')),kind=str(i.get('kind','')),text=scrub(i.get('text')),
             status=scrub(i.get('status'))) for i in p.get('items',[]) if i.get('kind') in ('resource','need','request')],
         last_confirmed_at=p.get('last_confirmed_at'),confirmation_status=scrub(p.get('confirmation_status')),
-        identity_review_required=bool(p.get('identity_review_required')),wechat_contact_verified=p.get('wechat_contact_verified') is True,business_confirmed_at=p.get('business_confirmed_at'),match_basis=p.get('match_basis'),semantic_similarity=p.get('semantic_similarity'))
+        portfolio=p.get('portfolio'),portfolio_summary=p.get('portfolio_summary'),identity_review_required=bool(p.get('identity_review_required')),wechat_contact_verified=p.get('wechat_contact_verified') is True,business_confirmed_at=p.get('business_confirmed_at'),match_basis=p.get('match_basis'),semantic_similarity=p.get('semantic_similarity'))
 
 def local(config,args):
     if args.command in ('submit','delete-submission','stop-recording','register-profile','my-profile','select-person'):return dict(status='not_connected',message='提交需要连接正式网络；本地查人模式不上传记录。')
@@ -169,7 +171,9 @@ def remote(config,args):
     elif args.command=='person':payload=dict(person_id=args.id)
     elif args.command=='submit':
         payload=dict(id=args.id,scope=args.scope,text=Path(args.file).read_text(),notice_shown=args.notice_shown,notice_version='2026-09-14-v3' if args.scope=='conversation_turn' else '2026-09-13-v2')
-    elif args.command=='register-profile':payload=dict(id=args.id,confirmed=args.confirmed,card=json.loads(Path(args.file).read_text()))
+    elif args.command=='register-profile':
+        payload=dict(id=args.id,confirmed=args.confirmed,card=json.loads(Path(args.file).read_text()))
+        if getattr(args,'expected_revision',None) is not None:payload['expected_revision']=args.expected_revision
     elif args.command=='select-person':payload=dict(id=args.request_id,person_id=args.person_id,notice_shown=args.notice_shown)
     elif args.command=='delete-submission':payload=dict(id=args.id)
     headers={'Content-Type':'application/json','Accept':'application/json','User-Agent':'XQG-Business-Network/'+CLIENT_VERSION}
@@ -194,7 +198,7 @@ def remote(config,args):
         if not 30<=len(token)<=128 or not re.fullmatch(r'[A-Za-z0-9_-]+',token):raise ValueError('invalid credential')
         headers['Authorization']='Bearer '+token
     encoded=json.dumps(payload,ensure_ascii=False).encode()
-    if len(encoded)>8192:return dict(status='invalid_request',message='内容超出提交长度，请精简档案后重新请本人确认；本次未保存。')
+    if len(encoded)>(65536 if args.command=='register-profile' else 8192):return dict(status='invalid_request',message='内容超出提交长度，请精简档案后重新请本人确认；本次未保存。')
     req=request.Request(base_url+'/v1/'+endpoint,data=encoded,headers=headers,method='POST')
     with open_request(req, retry=args.command in ('status','stats','search','person','my-profile')) as response:
         body=response.read(1024*1024+1)
@@ -208,7 +212,7 @@ def remote(config,args):
         if type(data.get('recording_stopped')) is bool:result['recording_stopped']=data['recording_stopped']
         import importlib.util
         spec=importlib.util.spec_from_file_location('xqg_reception_config',Path(__file__).with_name('reception_config.py'));module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
-        return dict(result,**module.effective(data.get('reception_config')),mode='http',referral_available=bool(data.get('referral_available')),semantic_search_available=bool(data.get('semantic_search_available')),search_available=bool(data.get('search_available')),filtered_stats_available=bool(data.get('filtered_stats_available')),submission_available=bool(data.get('submission_available')),conversation_turn_available=bool(data.get('conversation_turn_available')),registration_available=bool(data.get('registration_available')),scheduler_available='由宿主另行核实')
+        return dict(result,**module.effective(data.get('reception_config')),mode='http',profile_schema_version=data.get('profile_schema_version',1),portfolio_available=data.get('portfolio_available') is True,media_upload_available=data.get('media_upload_available') is True,referral_available=bool(data.get('referral_available')),semantic_search_available=bool(data.get('semantic_search_available')),search_available=bool(data.get('search_available')),filtered_stats_available=bool(data.get('filtered_stats_available')),submission_available=bool(data.get('submission_available')),conversation_turn_available=bool(data.get('conversation_turn_available')),registration_available=bool(data.get('registration_available')),scheduler_available='由宿主另行核实')
     if args.command in ('register-profile','my-profile'):
         return dict(result,**{k:data[k] for k in ('saved','registered','person_id','revision','card','matching_open','registration_status','confirmed_at','replayed') if k in data})
     if args.command=='select-person':return dict(result,**{k:data[k] for k in ('referral_id','stage','saved','replayed') if k in data})
@@ -230,7 +234,7 @@ def main():
     subm=sub.add_parser('submit');subm.add_argument('--file',required=True);subm.add_argument('--scope',choices=['profile_summary','conversation_excerpt','conversation_turn'],required=True);subm.add_argument('--id',required=True);subm.add_argument('--notice-shown',action='store_true',required=True)
     sub.add_parser('stop-recording')
     sub.add_parser('my-profile')
-    registration=sub.add_parser('register-profile');registration.add_argument('--file',required=True);registration.add_argument('--id',required=True);registration.add_argument('--confirmed',action='store_true',required=True)
+    registration=sub.add_parser('register-profile');registration.add_argument('--file',required=True);registration.add_argument('--id',required=True);registration.add_argument('--confirmed',action='store_true',required=True);registration.add_argument('--expected-revision',type=int)
     delete=sub.add_parser('delete-submission');delete.add_argument('--id',required=True)
     selection=sub.add_parser('select-person');selection.add_argument('--person-id',required=True);selection.add_argument('--request-id',required=True);selection.add_argument('--notice-shown',action='store_true',required=True)
     args=parser.parse_args()

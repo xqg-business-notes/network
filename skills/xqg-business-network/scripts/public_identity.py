@@ -28,7 +28,7 @@ def public_person(person):
                 else:value=value.replace(alias,masked)
             return value
         if isinstance(value,list):return [redact(x) for x in value]
-        if isinstance(value,dict):return {k:(v if k in ('person_id','item_id') else redact(v)) for k,v in value.items()}
+        if isinstance(value,dict):return {k:(v if k in ('person_id','item_id','id','offering_ids','url') else redact(v)) for k,v in value.items()}
         return value
     result=redact(person);result['name']=masked;result['name_masked']=True
     return result

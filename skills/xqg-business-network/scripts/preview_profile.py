@@ -6,12 +6,15 @@ from public_identity import public_person
 
 def preview(card):
     fields=('name','cities','companies','businesses','resources','needs')
-    if not isinstance(card,dict) or set(card)!=set(fields):raise ValueError('档案字段不匹配')
+    if not isinstance(card,dict) or (not set(fields)<=set(card) or set(card)-set(fields)-{'portfolio'}):raise ValueError('档案字段不匹配')
     if not isinstance(card['name'],str) or not card['name'].strip():raise ValueError('请提供称呼')
     for key in fields[1:]:
         if not isinstance(card[key],list) or any(not isinstance(v,str) for v in card[key]):raise ValueError('档案字段应为文字列表')
     p={k:card[k] for k in fields[:4]}
     p['items']=[dict(kind=kind,text=text) for key,kind in [('resources','resource'),('needs','need')] for text in card[key]]
+    if 'portfolio' in card:
+        from profile_schema import validate_portfolio
+        p['portfolio']=validate_portfolio(card['portfolio'])
     return public_person(p)
 
 if __name__=='__main__':

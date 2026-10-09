@@ -26,7 +26,8 @@ def matches(text, query):
     return all(any(contains(text,t) for t in group) for group in groups(query))
 
 def rank(p,query,kind):
-    businesses=' '.join(p.get('businesses',[]))
+    from profile_schema import portfolio_text
+    businesses=' '.join(p.get('businesses',[]))+ ' ' + portfolio_text(p,kind)
     items=[i for i in p.get('items',[]) if kind is None or i['kind']==kind]
     relevant=[i for i in items if matches(i['text'],query)]
     business=matches(businesses,query)
